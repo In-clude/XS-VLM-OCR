@@ -155,7 +155,7 @@
 法2：从源码编译
 
 ```
-git clone https://github.com/yourusername/XS-VLM-OCR.git
+git clone https://github.com/xstongxue/XS-VLM-OCR.git
 cd XS-VLM-OCR
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH="你的Qt路径"
@@ -227,7 +227,7 @@ cmake --build . --config Release
 - **微信公众号**：小帅随笔
 - **项目主页**：[https://github.com/xstongxue/XS-VLM-OCR](https://github.com/xstongxue/XS-VLM-OCR)
 - **问题反馈**：[https://github.com/xstongxue/XS-VLM-OCR/issues](https://github.com/xstongxue/XS-VLM-OCR/issues)
-- **讨论交流**：[https://github.com/yourusername/XS-VLM-OCR/discussions](https://github.com/yourusername/XS-VLM-OCR/discussions)
+- **讨论交流**：[https://github.com/xstongxue/XS-VLM-OCR/discussions](https://github.com/xstongxue/XS-VLM-OCR/discussions)
 
 
 ## 开源协议
@@ -261,3 +261,7 @@ Made with ❤️ by XS-VLM-OCR Team
 *"不只是看见，更要理解"*
 
 </div>
+
+
+
+[![Star History Chart](https://api.star-history.com/svg?repos=xstongxue/XS-VLM-OCR&type=date&legend=top-left)](https://www.star-history.com/#xstongxue/XS-VLM-OCR&type=date&legend=top-left)
