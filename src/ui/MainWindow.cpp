@@ -1,4 +1,4 @@
-#include "MainWindow.h"
+﻿#include "MainWindow.h"
 #include "SettingsDialog.h"
 #include "../adapters/TesseractAdapter.h"
 #include "../adapters/QwenAdapter.h"
@@ -3618,12 +3618,27 @@ public:
         setGeometry(totalRect);
         
         // 截取整个屏幕作为背景
-        QScreen* primaryScreen = QGuiApplication::primaryScreen();
-        if (primaryScreen) {
-            m_fullScreenshot = primaryScreen->grabWindow(0);
+        // 组装所有屏幕的截图为一张大图（支持多屏）
+        const QList<QScreen*> screens = QGuiApplication::screens();
+        if (!screens.isEmpty()) {
+            QPixmap composed(totalRect.size());
+            composed.fill(Qt::transparent);
+            QPainter p(&composed);
+            for (QScreen* s : screens) {
+                // 抓取该屏幕画面
+                QPixmap pm = s->grabWindow(0);
+                // 统一为逻辑像素，避免不同缩放比导致错位
+                pm.setDevicePixelRatio(1.0);
+                pm = pm.scaled(s->geometry().size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                // 放到虚拟桌面的对应位置
+                const QPoint offset = s->geometry().topLeft() - totalRect.topLeft();
+                p.drawPixmap(offset, pm);
+            }
+            p.end();
+            m_fullScreenshot = composed;
         }
         
-        showFullScreen();
+        show();
         raise();
         activateWindow();
     }

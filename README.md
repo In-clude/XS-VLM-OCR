@@ -35,7 +35,7 @@
 > - **Qwen-VL系列**：阿里云全系列视觉语言模型，支持Qwen-VL-Plus/Max/235B-VL等
 > - **GLM-4V系列**：智谱AI的多模态大模型，支持GLM-4.5V/4.6V
 > - **PaddleOCR-VL**：百度飞桨OCR-VL系列，支持PaddleOCR-VL
-> - **自定义适配器**：支持接入任何与 OpenAPI 兼容的多模态大模型
+> - **自定义API接口**：支持接入任何与 OpenAPI 格式兼容的接口
 > - **Tesseract离线**：经典 OCR 引擎，无网络依赖
 
 ### 智能提示词系统
@@ -150,7 +150,7 @@
 法1：直接下载编译好的版本
 
 - 夸克云：[https://pan.quark.cn/s/cfbe6c3b0bfc](https://pan.quark.cn/s/cfbe6c3b0bfc)
-- 访问 GitHub Releases 页面下载
+- 访问 [GitHub Releases](https://github.com/xstongxue/XS-VLM-OCR/releases) 页面下载
 
 法2：从源码编译
 
@@ -192,7 +192,7 @@ cmake --build . --config Release
 
 ## 功能规划
 
-### 已完成功能 (v1.0)
+### 已完成功能 (v1.0, 2025-12-14)
 
 - [√] 全局快捷键截图（ALT+A）
 - [√] 主流大模型支持（Qwen、GLM、Paddle、Custom、Tesseract）

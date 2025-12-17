@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(XS-VLM-OCR LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_PREFIX_PATH "c:/Qt/Qt5.14.2/5.14.2/mingw73_64")
+set(CMAKE_PREFIX_PATH "c:/Qt/Qt5.14.2/5.14.2/mingw73_32")
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
