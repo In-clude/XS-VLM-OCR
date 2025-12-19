@@ -141,8 +141,8 @@ void MainWindow::setupUI()
 
     // ============ 左侧：导航栏（可伸缩）============
     m_sidebarPanel = new QWidget();
-    m_sidebarPanel->setMinimumWidth(150);
-    m_sidebarPanel->setMaximumWidth(300);
+    m_sidebarPanel->setMinimumWidth(300); // 设置侧边栏最小宽度为300
+    m_sidebarPanel->setMaximumWidth(QWIDGETSIZE_MAX); // 设置侧边栏最大宽度为 无限制
     m_sidebarPanel->setStyleSheet(
         "QWidget { "
         "  background: #2c2c2c;"
@@ -529,25 +529,6 @@ void MainWindow::setupUI()
     sidebarLayout->addWidget(configWidget);
     
     sidebarLayout->addStretch();
-    
-    // 使用 QSplitter 实现可伸缩侧边栏
-    m_mainSplitter = new QSplitter(Qt::Horizontal);
-    m_mainSplitter->addWidget(m_sidebarPanel);
-    m_mainSplitter->setStretchFactor(0, 0); // 侧边栏不伸缩
-    m_mainSplitter->setCollapsible(0, false); // 侧边栏不可折叠（通过按钮控制）
-    m_mainSplitter->setSizes({180, 900}); // 设置初始大小
-    m_mainSplitter->setHandleWidth(3);
-    m_mainSplitter->setStyleSheet(
-        "QSplitter::handle { "
-        "  background: #1a1a1a; "
-        "  width: 3px;"
-        "}"
-        "QSplitter::handle:hover { "
-        "  background: #3a3a3a;"
-        "}"
-    );
-    
-    mainLayout->addWidget(m_mainSplitter);
 
     // ============ 右侧：内容区 ============
     m_contentPanel = new QWidget();
@@ -564,6 +545,36 @@ void MainWindow::setupUI()
     // 使用 QStackedWidget 管理不同页面
     m_stackedWidget = new QStackedWidget();
     contentPanelLayout->addWidget(m_stackedWidget);
+    
+    // 使用 QSplitter 实现可伸缩侧边栏
+    m_mainSplitter = new QSplitter(Qt::Horizontal);
+    m_mainSplitter->addWidget(m_sidebarPanel);
+    m_mainSplitter->addWidget(m_contentPanel);
+    m_mainSplitter->setStretchFactor(0, 0); // 侧边栏不伸缩
+    m_mainSplitter->setCollapsible(0, false); // 侧边栏不可折叠（通过按钮控制）
+    m_mainSplitter->setStretchFactor(1, 1); // 内容区伸缩因子为1
+    m_mainSplitter->setSizes({300, 900}); // 设置初始大小，侧边栏宽度300，内容区宽度900
+    m_mainSplitter->setChildrenCollapsible(false); // 设置子控件不可折叠
+    m_mainSplitter->setOpaqueResize(true); // 设置分割线可拖拽
+    m_mainSplitter->setHandleWidth(1); // 设置分割线宽度
+    if (QSplitterHandle* handle = m_mainSplitter->handle(1)) {
+        handle->setCursor(Qt::SplitHCursor); // 设置分割线鼠标样式
+        handle->setToolTip("拖拽调整侧边栏宽度"); // 设置分割线提示
+    }
+    m_mainSplitter->setStyleSheet(
+        "QSplitter::handle:horizontal { "
+        "  background: #ededed; "
+        "  border-left: 1px solid #dcdcdc; "
+        "  border-right: 1px solid #dcdcdc; "
+        "}"
+        "QSplitter::handle:horizontal:hover { "
+        "  background: #d8d8d8; "
+        "  border-left: 1px solid #c2c2c2; "
+        "  border-right: 1px solid #c2c2c2;"
+        "}"
+    );
+    
+    mainLayout->addWidget(m_mainSplitter);
     
     // ============ 创建首页（使用滚动区域）============
     QScrollArea *homeScrollArea = new QScrollArea();
@@ -741,8 +752,8 @@ void MainWindow::setupUI()
     m_resultText = new QTextEdit();
     m_resultText->setReadOnly(true);
     m_resultText->setPlaceholderText("");
-    m_resultText->setMinimumHeight(150);
-    m_resultText->setMaximumHeight(300);
+    m_resultText->setMinimumHeight(150); // 结果文本区域最小高度为150
+    m_resultText->setMaximumHeight(300); // 结果文本区域最大高度为300
     m_resultText->setStyleSheet(
         "QTextEdit { "
         "  padding: 15px; "
@@ -825,8 +836,7 @@ void MainWindow::setupUI()
     // 默认显示首页
     m_stackedWidget->setCurrentIndex(0);
     
-    // 将内容面板添加到主布局
-    mainLayout->addWidget(m_contentPanel, 1);
+    // 内容面板已加入 m_mainSplitter，用于支持拖拽调整侧边栏宽度
     
     // 状态栏
     m_statusLabel = new QLabel("就绪");
@@ -1213,14 +1223,16 @@ void MainWindow::initializeServices()
     
     // 滚动条样式（与主题匹配）
     QString scrollBarStyle = grayTheme
-        ? "QScrollBar:vertical { border: none; background: rgba(255, 255, 255, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(255, 255, 255, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(255, 255, 255, 0.3); }"
+        ? "QScrollBar:vertical { border: none; background: #2b2b2b; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #555555; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #666666; }"
           "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-        : "QScrollBar:vertical { border: none; background: rgba(0, 0, 0, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(0, 0, 0, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(0, 0, 0, 0.3); }"
-          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }";
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #2b2b2b; }"
+        : "QScrollBar:vertical { border: none; background: #f5f5f5; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #c0c0c0; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #a0a0a0; }"
+          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #f5f5f5; }";
     
     QString listStyle = grayTheme
         ? "QListWidget { "
@@ -2268,14 +2280,16 @@ void MainWindow::onSettingsChanged()
     
     // 滚动条样式（与主题匹配）
     QString scrollBarStyle = grayTheme
-        ? "QScrollBar:vertical { border: none; background: rgba(255, 255, 255, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(255, 255, 255, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(255, 255, 255, 0.3); }"
+        ? "QScrollBar:vertical { border: none; background: #2b2b2b; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #555555; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #666666; }"
           "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-        : "QScrollBar:vertical { border: none; background: rgba(0, 0, 0, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(0, 0, 0, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(0, 0, 0, 0.3); }"
-          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }";
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #2b2b2b; }"
+        : "QScrollBar:vertical { border: none; background: #f5f5f5; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #c0c0c0; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #a0a0a0; }"
+          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #f5f5f5; }";
     
     QString listStyle = grayTheme
         ? QString("QListWidget { border: none; background: transparent; color: #e0e0e0; padding: 4px; }"
@@ -2479,8 +2493,8 @@ void MainWindow::onSidebarToggleClicked()
         }
     } else {
         // 展开：恢复侧边栏
-        m_sidebarPanel->setMinimumWidth(150);
-        m_sidebarPanel->setMaximumWidth(300);
+        m_sidebarPanel->setMinimumWidth(300); // 恢复后：侧边栏最小宽度为300
+        m_sidebarPanel->setMaximumWidth(QWIDGETSIZE_MAX); // 恢复后：侧边栏最大宽度为 无限制
         QIcon sidebarIcon(":/res/sidebar.png");
         m_sidebarToggleBtn->setIcon(sidebarIcon);
         m_sidebarToggleBtn->setToolTip("收起侧边栏");
@@ -2556,7 +2570,7 @@ void MainWindow::onSidebarToggleClicked()
         if (m_sidebarCollapsed) {
             m_mainSplitter->setSizes({60, 1000});
         } else {
-            m_mainSplitter->setSizes({180, 900});
+            m_mainSplitter->setSizes({220, 900});
         }
     }
 }
@@ -2591,14 +2605,16 @@ void MainWindow::reloadPromptTabs()
     bool grayTheme = m_isGrayTheme;
     
     QString scrollBarStyle = grayTheme
-        ? "QScrollBar:vertical { border: none; background: rgba(255, 255, 255, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(255, 255, 255, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(255, 255, 255, 0.3); }"
+        ? "QScrollBar:vertical { border: none; background: #2b2b2b; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #555555; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #666666; }"
           "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-        : "QScrollBar:vertical { border: none; background: rgba(0, 0, 0, 0.05); width: 12px; border-radius: 6px; }"
-          "QScrollBar::handle:vertical { background: rgba(0, 0, 0, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-          "QScrollBar::handle:vertical:hover { background: rgba(0, 0, 0, 0.3); }"
-          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }";
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #2b2b2b; }"
+        : "QScrollBar:vertical { border: none; background: #f5f5f5; width: 12px; border-radius: 6px; }"
+          "QScrollBar::handle:vertical { background: #c0c0c0; border-radius: 6px; min-height: 30px; margin: 2px; }"
+          "QScrollBar::handle:vertical:hover { background: #a0a0a0; }"
+          "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #f5f5f5; }";
     
     QString listStyle = grayTheme
         ? "QListWidget { "
@@ -3246,14 +3262,16 @@ void MainWindow::applyTheme(bool grayTheme)
         
         // 滚动条样式（与主题匹配）
         QString scrollBarStyle = grayTheme
-            ? "QScrollBar:vertical { border: none; background: rgba(255, 255, 255, 0.05); width: 12px; border-radius: 6px; }"
-              "QScrollBar::handle:vertical { background: rgba(255, 255, 255, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-              "QScrollBar::handle:vertical:hover { background: rgba(255, 255, 255, 0.3); }"
+            ? "QScrollBar:vertical { border: none; background: #2b2b2b; width: 12px; border-radius: 6px; }"
+              "QScrollBar::handle:vertical { background: #555555; border-radius: 6px; min-height: 30px; margin: 2px; }"
+              "QScrollBar::handle:vertical:hover { background: #666666; }"
               "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-            : "QScrollBar:vertical { border: none; background: rgba(0, 0, 0, 0.05); width: 12px; border-radius: 6px; }"
-              "QScrollBar::handle:vertical { background: rgba(0, 0, 0, 0.2); border-radius: 6px; min-height: 30px; margin: 2px; }"
-              "QScrollBar::handle:vertical:hover { background: rgba(0, 0, 0, 0.3); }"
-              "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }";
+              "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #2b2b2b; }"
+            : "QScrollBar:vertical { border: none; background: #f5f5f5; width: 12px; border-radius: 6px; }"
+              "QScrollBar::handle:vertical { background: #c0c0c0; border-radius: 6px; min-height: 30px; margin: 2px; }"
+              "QScrollBar::handle:vertical:hover { background: #a0a0a0; }"
+              "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+              "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #f5f5f5; }";
         
         QString listStyle = grayTheme
             ? QString("QListWidget { border: none; background: transparent; color: #e0e0e0; padding: 4px; }"
@@ -3361,20 +3379,31 @@ void MainWindow::applyTheme(bool grayTheme)
     auto splitters = findChildren<QSplitter*>();
     for (QSplitter* splitter : splitters)
     {
-        QString handleColor = grayTheme ? "#1a1a1a" : "#e0e0e0";
-        QString handleHoverColor = grayTheme ? "#3a3a3a" : "#d0d0d0";
+        QString handleColor = grayTheme ? "#3a3a3a" : "#ededed";
+        QString handleBorder = grayTheme ? "#2a2a2a" : "#dcdcdc";
+        QString handleHoverColor = grayTheme ? "#505050" : "#d8d8d8";
+        QString handleHoverBorder = grayTheme ? "#3c3c3c" : "#c2c2c2";
         splitter->setStyleSheet(
             QString(
-                "QSplitter::handle { "
+                "QSplitter::handle:horizontal { "
                 "  background: %1; "
-                "  width: 3px;"
+                "  border-left: 1px solid %2; "
+                "  border-right: 1px solid %2; "
                 "}"
-                "QSplitter::handle:hover { "
-                "  background: %2;"
+                "QSplitter::handle:horizontal:hover { "
+                "  background: %3; "
+                "  border-left: 1px solid %4; "
+                "  border-right: 1px solid %4;"
                 "}"
             )
                 .arg(handleColor)
-                .arg(handleHoverColor));
+                .arg(handleBorder)
+                .arg(handleHoverColor)
+                .arg(handleHoverBorder));
+        splitter->setHandleWidth(6);
+        if (QSplitterHandle* handle = splitter->handle(1)) {
+            handle->setCursor(Qt::SplitHCursor);
+        }
     }
     
     // 更新图片显示区域样式
@@ -3444,22 +3473,26 @@ void MainWindow::applyTheme(bool grayTheme)
     
     // 更新滚动条样式（增大尺寸以提高灵敏度）
     QString scrollBarStyle = grayTheme
-        ? "QScrollBar:vertical { border: none; background: rgba(255, 255, 255, 0.05); width: 18px; border-radius: 9px; }"
+        ? "QScrollBar:vertical { border: none; background: #2b2b2b; width: 18px; border-radius: 9px; }"
           "QScrollBar::handle:vertical { background: #555555; border-radius: 9px; min-height: 50px; margin: 2px; }"
           "QScrollBar::handle:vertical:hover { background: #666666; }"
           "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-          "QScrollBar:horizontal { border: none; background: rgba(255, 255, 255, 0.05); height: 18px; border-radius: 9px; }"
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #2b2b2b; }"
+          "QScrollBar:horizontal { border: none; background: #2b2b2b; height: 18px; border-radius: 9px; }"
           "QScrollBar::handle:horizontal { background: #555555; border-radius: 9px; min-width: 50px; margin: 2px; }"
           "QScrollBar::handle:horizontal:hover { background: #666666; }"
           "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }"
-        : "QScrollBar:vertical { border: none; background: #f0f0f0; width: 18px; border-radius: 9px; }"
+          "QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: #2b2b2b; }"
+        : "QScrollBar:vertical { border: none; background: #f5f5f5; width: 18px; border-radius: 9px; }"
           "QScrollBar::handle:vertical { background: #c0c0c0; border-radius: 9px; min-height: 50px; margin: 2px; }"
           "QScrollBar::handle:vertical:hover { background: #a0a0a0; }"
           "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
-          "QScrollBar:horizontal { border: none; background: #f0f0f0; height: 18px; border-radius: 9px; }"
+          "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: #f5f5f5; }"
+          "QScrollBar:horizontal { border: none; background: #f5f5f5; height: 18px; border-radius: 9px; }"
           "QScrollBar::handle:horizontal { background: #c0c0c0; border-radius: 9px; min-width: 50px; margin: 2px; }"
           "QScrollBar::handle:horizontal:hover { background: #a0a0a0; }"
-          "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }";
+          "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }"
+          "QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: #f5f5f5; }";
     setStyleSheet(scrollBarStyle);
     
     // 更新所有滚动区域的滚动步长
