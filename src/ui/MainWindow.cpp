@@ -34,6 +34,7 @@
 #include <QTimer>
 #include <QPalette>
 #include <QScrollBar>
+#include <QFileInfo>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRubberBand>
@@ -642,7 +643,7 @@ void MainWindow::setupUI()
     
     uploadCardLayout->addLayout(uploadBtnLayout);
     
-    // 图片显示容器（包含图片和关闭按钮）
+    // 图片显示容器（包含图片和关闭/切换按钮）
     m_imageContainer = new QWidget();
     m_imageContainer->setMinimumHeight(200);
     m_imageContainer->setMaximumHeight(400);
@@ -691,6 +692,42 @@ void MainWindow::setupUI()
     
     // 将关闭按钮添加到容器（使用绝对定位）
     m_closeImageBtn->setParent(m_imageContainer);
+
+    // 批量切换按钮（左右箭头）
+    QString batchNavStyle =
+        "QPushButton { "
+        "  background: rgba(255, 255, 255, 0.9); "
+        "  color: #333; "
+        "  border: 1px solid #d0d0d0; "
+        "  border-radius: 10px; "
+        "  font-size: 16pt; "
+        "}"
+        "QPushButton:hover { "
+        "  background: rgba(255, 255, 255, 1); "
+        "  border-color: #b0b0b0; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: rgba(245, 245, 245, 1); "
+        "}";
+
+    m_prevImageBtn = new QPushButton("<");
+    m_prevImageBtn->setFixedSize(30, 60);
+    m_prevImageBtn->setStyleSheet(batchNavStyle);
+    m_prevImageBtn->setCursor(Qt::PointingHandCursor);
+    m_prevImageBtn->hide();
+    m_prevImageBtn->setParent(m_imageContainer);
+
+    m_nextImageBtn = new QPushButton(">");
+    m_nextImageBtn->setFixedSize(30, 60);
+    m_nextImageBtn->setStyleSheet(batchNavStyle);
+    m_nextImageBtn->setCursor(Qt::PointingHandCursor);
+    m_nextImageBtn->hide();
+    m_nextImageBtn->setParent(m_imageContainer);
+
+    // 批量信息标签
+    m_batchInfoLabel = new QLabel(m_imageContainer);
+    m_batchInfoLabel->setStyleSheet("QLabel { background: rgba(0,0,0,0.45); color: white; padding: 4px 8px; border-radius: 8px; font-size: 9pt; }");
+    m_batchInfoLabel->hide();
     
     uploadCardLayout->addWidget(m_imageContainer, 1);
     
@@ -952,6 +989,20 @@ void MainWindow::setupConnections()
     connect(m_pasteBtn, &QPushButton::clicked, this, &MainWindow::onPasteImageClicked);
     connect(m_recognizeBtn, &QPushButton::clicked, this, &MainWindow::onRecognizeClicked);
     connect(m_closeImageBtn, &QPushButton::clicked, this, &MainWindow::onCloseImageClicked);
+    connect(m_prevImageBtn, &QPushButton::clicked, this, [this]() {
+        if (m_batchItems.isEmpty()) return;
+        int total = m_batchItems.size();
+        int current = (m_batchViewIndex >= 0) ? m_batchViewIndex : 0;
+        int idx = current <= 0 ? total - 1 : current - 1;
+        showBatchItem(idx);
+    });
+    connect(m_nextImageBtn, &QPushButton::clicked, this, [this]() {
+        if (m_batchItems.isEmpty()) return;
+        int total = m_batchItems.size();
+        int current = (m_batchViewIndex >= 0) ? m_batchViewIndex : 0;
+        int idx = (current + 1) % total;
+        showBatchItem(idx);
+    });
     connect(m_modelComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onModelChanged);
     // 提示词模板选择将在加载时连接
@@ -1745,6 +1796,121 @@ void MainWindow::loadImage(const QImage &image, SubmitSource source)
                           .arg(sourceText)
                           .arg(image.width())
                           .arg(image.height()));
+
+    updateBatchNav();
+}
+
+void MainWindow::startBatchProcessing(const QStringList& files, SubmitSource source)
+{
+    if (m_recognizing) {
+        QMessageBox::information(this, "提示", "当前正在识别，请稍后再开始批量处理");
+        return;
+    }
+
+    m_batchFiles.clear();
+    m_batchItems.clear();
+    m_batchViewIndex = -1;
+    m_batchProcessingIndex = -1;
+    m_batchIndex = 0;
+    m_batchPrompt = m_promptEdit ? m_promptEdit->toPlainText().trimmed() : QString();
+    m_batchSource = source;
+    m_batchRunning = true;
+
+    int added = 0;
+    int skipped = 0;
+    for (const QString& path : files) {
+        QImage img(path);
+        if (img.isNull()) {
+            skipped++;
+            continue;
+        }
+        m_batchFiles << path;
+        BatchItem item;
+        item.path = path;
+        item.image = img;
+        m_batchItems.append(item);
+        added++;
+    }
+
+    if (m_batchFiles.isEmpty()) {
+        m_batchRunning = false;
+        showStatusMessage("没有有效的图片可处理");
+        updateBatchNav();
+        return;
+    }
+
+    if (skipped > 0) {
+        showStatusMessage(QString("开始批量处理，共 %1 张（跳过 %2 张无效图片）").arg(added).arg(skipped));
+    } else {
+        showStatusMessage(QString("开始批量处理，共 %1 张").arg(added));
+    }
+    updateBatchNav();
+    processNextBatchImage();
+}
+
+void MainWindow::processNextBatchImage()
+{
+    if (!m_batchRunning)
+        return;
+
+    if (m_batchIndex >= m_batchFiles.size()) {
+        m_batchRunning = false;
+        showStatusMessage("批量处理完成");
+        return;
+    }
+
+    m_batchProcessingIndex = m_batchIndex;
+    QString filePath = m_batchFiles.at(m_batchIndex);
+    if (m_batchProcessingIndex >= m_batchItems.size()) {
+        m_batchRunning = false;
+        return;
+    }
+
+    BatchItem& item = m_batchItems[m_batchProcessingIndex];
+    if (item.image.isNull()) {
+        showStatusMessage(QString("跳过无效图片: %1").arg(QFileInfo(filePath).fileName()));
+        ++m_batchIndex;
+        processNextBatchImage();
+        return;
+    }
+
+    ++m_batchIndex;
+
+    // 预览当前图片并提交识别
+    m_batchViewIndex = m_batchProcessingIndex;
+    loadImage(item.image, m_batchSource);
+    showStatusMessage(QString("批量处理中 (%1/%2): %3")
+                          .arg(m_batchIndex)
+                          .arg(m_batchFiles.size())
+                          .arg(QFileInfo(filePath).fileName()));
+    m_pipeline->submitImage(item.image, m_batchSource, m_batchPrompt);
+    updateBatchNav();
+}
+
+void MainWindow::showBatchItem(int index)
+{
+    if (index < 0 || index >= m_batchItems.size())
+        return;
+
+    const BatchItem& item = m_batchItems.at(index);
+    m_batchViewIndex = index;
+    if (!item.image.isNull()) {
+        loadImage(item.image, m_batchSource);
+    }
+
+    if (m_resultText) {
+    if (item.finished) {
+        if (item.result.success) {
+            m_resultText->setPlainText(item.result.fullText);
+        } else {
+            m_resultText->setPlainText(item.error.isEmpty() ? "识别失败" : item.error);
+        }
+    } else {
+        m_resultText->setPlainText("等待识别或处理中...");
+    }
+
+    updateBatchNav();
+}
 }
 
 void MainWindow::onCloseImageClicked()
@@ -1761,6 +1927,9 @@ void MainWindow::onCloseImageClicked()
     {
         m_closeImageBtn->hide();
     }
+    if (m_prevImageBtn) m_prevImageBtn->hide();
+    if (m_nextImageBtn) m_nextImageBtn->hide();
+    if (m_batchInfoLabel) m_batchInfoLabel->hide();
     
     // 清除识别结果
     if (m_resultText)
@@ -1778,29 +1947,41 @@ void MainWindow::updateCloseButtonPosition()
         m_closeImageBtn->move(m_imageContainer->width() - m_closeImageBtn->width() - 10, 10);
         m_closeImageBtn->raise();
     }
+
+    updateBatchNav();
 }
 
 void MainWindow::onUploadImageClicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(
+    QStringList fileNames = QFileDialog::getOpenFileNames(
         this,
         "选择图片",
         QString(),
         "图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp)");
 
-    if (fileName.isEmpty())
+    if (fileNames.isEmpty())
     {
         return;
     }
 
-    QImage image(fileName);
-    if (image.isNull())
+    // 单张图片：沿用原有逻辑
+    if (fileNames.size() == 1)
     {
-        QMessageBox::warning(this, "错误", "无法加载图片文件");
+        QImage image(fileNames.first());
+        if (image.isNull())
+        {
+            QMessageBox::warning(this, "错误", "无法加载图片文件");
+            return;
+        }
+        // 清空批量状态
+        m_batchRunning = false;
+        m_batchFiles.clear();
+        loadImage(image, SubmitSource::Upload);
         return;
     }
 
-    loadImage(image, SubmitSource::Upload);
+    // 多张图片：启用批量处理
+    startBatchProcessing(fileNames, SubmitSource::Upload);
 }
 
 void MainWindow::onPasteImageClicked()
@@ -1817,6 +1998,17 @@ void MainWindow::onPasteImageClicked()
 
 void MainWindow::onRecognizeClicked()
 {
+    // 手动点击识别时，视为单次任务，清理批量状态
+    m_batchRunning = false;
+    m_batchFiles.clear();
+    m_batchIndex = 0;
+    m_batchItems.clear();
+    m_batchViewIndex = -1;
+    m_batchProcessingIndex = -1;
+    if (m_batchInfoLabel) m_batchInfoLabel->hide();
+    if (m_prevImageBtn) m_prevImageBtn->hide();
+    if (m_nextImageBtn) m_nextImageBtn->hide();
+
     if (!m_pipeline->currentAdapter())
     {
         QMessageBox::warning(this, "错误", "请先选择模型");
@@ -2130,6 +2322,16 @@ void MainWindow::onRecognitionCompleted(const OCRResult &result, const QImage &i
         3000);
 
     showStatusMessage(QString("识别完成，耗时 %1ms").arg(result.processingTimeMs));
+
+    // 批量任务则继续下一张
+    if (m_batchRunning) {
+        if (m_batchProcessingIndex >= 0 && m_batchProcessingIndex < m_batchItems.size()) {
+            m_batchItems[m_batchProcessingIndex].result = result;
+            m_batchItems[m_batchProcessingIndex].finished = true;
+            m_batchItems[m_batchProcessingIndex].error.clear();
+        }
+        processNextBatchImage();
+    }
 }
 
 void MainWindow::onRecognitionFailed(const QString &error, const QImage &image, SubmitSource source)
@@ -2148,6 +2350,17 @@ void MainWindow::onRecognitionFailed(const QString &error, const QImage &image, 
 
     QMessageBox::warning(this, "识别失败", error);
     showStatusMessage("识别失败: " + error);
+
+    // 批量任务失败后继续下一张
+    if (m_batchRunning) {
+        if (m_batchProcessingIndex >= 0 && m_batchProcessingIndex < m_batchItems.size()) {
+            m_batchItems[m_batchProcessingIndex].finished = true;
+            m_batchItems[m_batchProcessingIndex].error = error;
+            m_batchItems[m_batchProcessingIndex].result.success = false;
+            m_batchItems[m_batchProcessingIndex].result.errorMessage = error;
+        }
+        processNextBatchImage();
+    }
 }
 
 void MainWindow::addHistoryItem(const HistoryItem &item)
@@ -3180,6 +3393,76 @@ void MainWindow::applyTheme(bool grayTheme)
             m_previewResultBtn->setStyleSheet(resultBtnStyle);
     }
     
+    // 批量左右切换按钮 & 信息标签 & 关闭按钮
+    {
+        QString batchNavStyle = grayTheme
+            ? "QPushButton { "
+              "  background: rgba(255, 255, 255, 0.18); "
+              "  color: #f5f5f5; "
+              "  border: 1px solid rgba(255, 255, 255, 0.25); "
+              "  border-radius: 10px; "
+              "  font-size: 16pt; "
+              "}"
+              "QPushButton:hover { "
+              "  background: rgba(255, 255, 255, 0.26); "
+              "  border-color: rgba(255, 255, 255, 0.35); "
+              "}"
+              "QPushButton:pressed { "
+              "  background: rgba(255, 255, 255, 0.32); "
+              "}"
+            : "QPushButton { "
+              "  background: rgba(255, 255, 255, 0.9); "
+              "  color: #333; "
+              "  border: 1px solid #d0d0d0; "
+              "  border-radius: 10px; "
+              "  font-size: 16pt; "
+              "}"
+              "QPushButton:hover { "
+              "  background: rgba(255, 255, 255, 1); "
+              "  border-color: #b0b0b0; "
+              "}"
+              "QPushButton:pressed { "
+              "  background: rgba(245, 245, 245, 1); "
+              "}";
+        if (m_prevImageBtn) m_prevImageBtn->setStyleSheet(batchNavStyle);
+        if (m_nextImageBtn) m_nextImageBtn->setStyleSheet(batchNavStyle);
+
+        if (m_batchInfoLabel) {
+            QString infoStyle = grayTheme
+                ? "QLabel { background: rgba(0,0,0,0.35); color: #f5f5f5; padding: 4px 8px; border-radius: 8px; font-size: 9pt; }"
+                : "QLabel { background: rgba(255,255,255,0.8); color: #000; padding: 4px 8px; border-radius: 8px; font-size: 9pt; }";
+            m_batchInfoLabel->setStyleSheet(infoStyle);
+        }
+
+        if (m_closeImageBtn) {
+            QString closeStyle = grayTheme
+                ? "QPushButton { "
+                  "  background: rgba(255, 255, 255, 0.28); "
+                  "  color: #111; "
+                  "  border: 1px solid rgba(255, 255, 255, 0.35); "
+                  "  border-radius: 14px; "
+                  "  font-size: 18pt; "
+                  "  font-weight: bold; "
+                  "}"
+                  "QPushButton:hover { "
+                  "  background: rgba(255, 255, 255, 0.40); "
+                  "  border-color: rgba(255, 255, 255, 0.50); "
+                  "}"
+                : "QPushButton { "
+                  "  background: rgba(0, 0, 0, 0.6); "
+                  "  color: white; "
+                  "  border: none; "
+                  "  border-radius: 14px; "
+                  "  font-size: 18pt; "
+                  "  font-weight: bold; "
+                  "}"
+                  "QPushButton:hover { "
+                  "  background: rgba(220, 53, 69, 0.8); "
+                  "}";
+            m_closeImageBtn->setStyleSheet(closeStyle);
+        }
+    }
+    
     // 其他按钮（深色风格）
     auto buttons = findChildren<QPushButton*>();
     for (QPushButton* btn : buttons)
@@ -3191,6 +3474,10 @@ void MainWindow::applyTheme(bool grayTheme)
         if (btn == m_uploadBtn || btn == m_pasteBtn || btn == m_recognizeBtn || 
             btn == m_copyResultBtn || btn == m_exportBtn || btn == m_previewResultBtn)
             continue; // 主页面按钮已单独处理
+        if (btn == m_prevImageBtn || btn == m_nextImageBtn)
+            continue; // 批量左右切换按钮使用自定义浅色样式
+        if (btn == m_closeImageBtn)
+            continue; // 关闭按钮已自定义
         
         btn->setStyleSheet(
             QString(
@@ -3706,17 +3993,27 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (mimeData->hasUrls())
     {
         QList<QUrl> urls = mimeData->urls();
-        if (!urls.isEmpty())
-        {
-            QString filePath = urls.first().toLocalFile();
-            QImage image(filePath);
-            if (!image.isNull())
-            {
-                loadImage(image, SubmitSource::DragDrop);
-                event->acceptProposedAction();
-            }
+        QStringList files;
+        for (const QUrl& url : urls) {
+            QString path = url.toLocalFile();
+            if (!path.isEmpty())
+                files << path;
         }
+        if (files.isEmpty())
+            return;
+
+    if (files.size() == 1) {
+        QImage image(files.first());
+        if (!image.isNull())
+        {
+            loadImage(image, SubmitSource::DragDrop);
+            event->acceptProposedAction();
+        }
+    } else {
+        startBatchProcessing(files, SubmitSource::DragDrop);
+        event->acceptProposedAction();
     }
+}
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -3989,3 +4286,47 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, long* r
     return QMainWindow::nativeEvent(eventType, message, result);
 }
 #endif
+void MainWindow::updateBatchNav()
+{
+    if (!m_imageContainer)
+        return;
+
+    int total = m_batchItems.size();
+    bool showNav = total > 1;
+
+    if (m_prevImageBtn && m_nextImageBtn) {
+        m_prevImageBtn->setVisible(showNav);
+        m_nextImageBtn->setVisible(showNav);
+
+        if (showNav) {
+            int midY = m_imageContainer->height() / 2 - m_prevImageBtn->height() / 2;
+            m_prevImageBtn->move(10, qMax(10, midY));
+            m_nextImageBtn->move(m_imageContainer->width() - m_nextImageBtn->width() - 10, qMax(10, midY));
+            m_prevImageBtn->raise();
+            m_nextImageBtn->raise();
+        }
+    }
+
+    if (m_batchInfoLabel) {
+        if (total > 0) {
+            QString status;
+            if (m_batchViewIndex >= 0 && m_batchViewIndex < m_batchItems.size()) {
+                const BatchItem& item = m_batchItems[m_batchViewIndex];
+                QString fileName = QFileInfo(item.path).fileName();
+                if (!item.finished) {
+                    status = QString("第 %1/%2 张 · %3 · 处理中/待处理").arg(m_batchViewIndex + 1).arg(total).arg(fileName);
+                } else if (item.result.success) {
+                    status = QString("第 %1/%2 张 · %3 · 完成").arg(m_batchViewIndex + 1).arg(total).arg(fileName);
+                } else {
+                    status = QString("第 %1/%2 张 · %3 · 失败").arg(m_batchViewIndex + 1).arg(total).arg(fileName);
+                }
+            }
+            m_batchInfoLabel->setText(status);
+            m_batchInfoLabel->setVisible(true);
+            m_batchInfoLabel->move(10, 10);
+            m_batchInfoLabel->raise();
+        } else {
+            m_batchInfoLabel->hide();
+        }
+    }
+}

@@ -441,7 +441,7 @@
             "type": "online",
             "engine": "gemini",
             "provider": "gemini",
-            "enabled": false,
+            "enabled": true,
             "params": {
                 "deploy_type": "online",
                 "model_name": "gemini-2.5-flash",

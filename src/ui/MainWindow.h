@@ -101,6 +101,11 @@ private:
     void initializeServices();
     // 加载图像
     void loadImage(const QImage& image, SubmitSource source);
+    // 批量处理
+    void startBatchProcessing(const QStringList& files, SubmitSource source);
+    void processNextBatchImage();
+    void showBatchItem(int index);
+    void updateBatchNav();
     // 添加历史记录
     void addHistoryItem(const HistoryItem& item);
     // 更新结果显示
@@ -143,6 +148,9 @@ private:
     QLabel* m_imageLabel;
     QPushButton* m_closeImageBtn;  // 关闭图片按钮
     QWidget* m_imageContainer;     // 图片容器（用于关闭按钮定位）
+    QPushButton* m_prevImageBtn;
+    QPushButton* m_nextImageBtn;
+    QLabel* m_batchInfoLabel;
     QImage m_currentImage;
     // 结果显示
     QTextEdit* m_resultText;
@@ -176,11 +184,27 @@ private:
     
     // 数据
     QVector<HistoryItem> m_history;
+    struct BatchItem {
+        QString path;
+        QImage image;
+        OCRResult result;
+        bool finished = false;
+        QString error;
+    };
+    QVector<BatchItem> m_batchItems;
     int m_currentHistoryIndex;
     bool m_recognizing;
     bool m_isGrayTheme;
     bool m_sidebarCollapsed;  // 侧边栏是否折叠
     QSplitter* m_mainSplitter;  // 主分割器
+    // 批量处理状态
+    QStringList m_batchFiles;
+    int m_batchIndex = 0;
+    QString m_batchPrompt;
+    bool m_batchRunning = false;
+    SubmitSource m_batchSource = SubmitSource::Upload;
+    int m_batchViewIndex = -1;
+    int m_batchProcessingIndex = -1;
 
     // 托盘提示是否已展示（避免重复弹出）
     bool m_trayNotified;
