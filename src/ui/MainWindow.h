@@ -47,6 +47,8 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     // 关闭按钮逻辑：隐藏到托盘
     void closeEvent(QCloseEvent* event) override;
+    // 窗口尺寸变化时刷新浮动控件位置
+    void resizeEvent(QResizeEvent* event) override;
     
 #ifdef _WIN32
     // Windows全局热键支持

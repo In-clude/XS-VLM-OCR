@@ -4086,6 +4086,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    // 使用异步调用，确保布局更新后再定位浮动控件
+    QTimer::singleShot(0, this, [this]() {
+        updateCloseButtonPosition();
+        updateBatchNav();
+    });
+}
+
 // 区域选择窗口类（用于截图）
 class ScreenshotSelector : public QWidget {
 public:
