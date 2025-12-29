@@ -547,13 +547,12 @@ void SettingsDialog::setupAboutTab()
         "\n"
         "v1.1.0\n"
         " - 支持新的模型：谷歌、混元、豆包、硅基流动、离线部署的Ollama系列\n"
-        " - 支持新的功能：多屏截图、左侧栏可拖拽、响应结果Markdown预览\n"
+        " - 支持新的功能：批量图片异步并发处理、多屏截图、左侧栏可拖拽、结果Markdown预览\n"
         "\n"
         "v1.2.0【待开发】\n"
-        " - 批量图片/文件处理\n"
+        " - 支持文件上传\n"
         " - 结果导出多格式（Markdown、PDF、Word、Excel）\n"
-        " - 跨平台支持（Win/Linux/Mac）\n"
-        " - 移动端应用\n"
+        " - 跨平台支持（Win/Linux/Mac）&& 移动端应用\n"
     );
     layout->addWidget(changelog);
 

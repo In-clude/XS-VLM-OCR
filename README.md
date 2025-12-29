@@ -7,7 +7,7 @@
 
 ![Qt](https://img.shields.io/badge/Qt-5.14.2%2B-green.svg)
 ![C++](https://img.shields.io/badge/C++-11%2B-blue.svg)
-![AI Models](https://img.shields.io/badge/AI-Qwen%20%7C%20Paddle%20%7C%20GLM%20%7C%20Custom-orange.svg)
+![AI Models](https://img.shields.io/badge/AI-Qwen%20%7C%20GLM%20%7C%20Paddle%20%7C%20Gemini%20%7C%20Doubao%20%7C%20OpenAI%E5%85%BC%E5%AE%B9-orange.svg)
 
 ***\*一场关于OCR革命的故事正在上演...\****
 
@@ -32,11 +32,14 @@
 
 ### 多模型智能引擎
 
-> - **Qwen-VL系列**：阿里云全系列视觉语言模型，支持Qwen-VL-Plus/Max/235B-VL等
-> - **GLM-4V系列**：智谱AI的多模态大模型，支持GLM-4.5V/4.6V
-> - **PaddleOCR-VL**：百度飞桨OCR-VL系列，支持PaddleOCR-VL
-> - **自定义API接口**：支持接入任何与 OpenAPI 格式兼容的接口
-> - **Tesseract离线**：经典 OCR 引擎，无网络依赖
+- **Qwen-VL 系列**：阿里云全系列视觉语言模型，支持Qwen-VL-Plus/Max/235B-VL等
+- **GLM-4V 系列**：智谱AI的多模态大模型，支持GLM-4.5V/4.6V
+- **PaddleOCR-VL**：百度飞桨OCR-VL系列，支持PaddleOCR-VL
+- **Gemini 系列**：谷歌系列多模态模型，支持Gemini-2.5-Flash/3.0-Lite等
+- **doubao 系列**：字节豆包多模态模型，支持doubao-seed-1-8-251215等
+- **通用 OpenAI 兼容**：可对接硅基流动、腾讯混元等兼容厂商
+- **自定义 API**：支持接入任何与 OpenAPI 格式兼容的接口
+- **Tesseract 离线**：经典 OCR 引擎，无网络依赖
 
 ### 智能提示词系统
 
@@ -88,11 +91,12 @@
 
 ### **极致的用户体验**
 
-> - **多种输入方式**：上传、粘贴、拖拽、全局快捷键截图
-> - **主题切换**：深色/浅色主题，护眼更舒适
-> - **侧边栏折叠**：紧凑模式，节省屏幕空间
-> - **异步处理**：基于 Qt 线程池，防止卡顿
-> - **跨平台支持**：Win/Linux/Mac完美运行
+- **主题切换**：深色/浅色主题，批量导航/关闭按钮随主题适配
+- **侧边栏折叠 & 可拖拽**：紧凑模式，节省屏幕空间
+- **多种输入方式**：上传、粘贴、拖拽、全局快捷键截图
+- **批量并发**：多图上传/拖拽，默认 4 并发，结果逐张回填，可箭头切换预览
+- **异步处理**：Qt 线程池 + contextId 追踪，防卡顿
+- **跨平台支持**：Win/Linux，macOS 兼容取决于 Qt 环境
 
 ## 为什么选择 XS-VLM-OCR ？
 
@@ -188,25 +192,21 @@ cmake --build . --config Release
 
 ## 技术架构：为开发者而生
 
-项目协作：撰写中
+[加入我们：参与教程-技术架构：为开发者而生.md](https://github.com/xstongxue/XS-VLM-OCR/blob/main/d:/QC_Development/XS-VLM-OCR/docs/参与教程-技术架构：为开发者而生.md)
 
 ## 功能规划
 
-### 已完成功能 (v1.0, 2025-12-14)
-
+### 已完成功能(2025.12.29)
 - [√] 全局快捷键截图（ALT+A）
-- [√] 主流大模型支持（Qwen、GLM、Paddle、Custom、Tesseract）
-- [√] 智能提示词管理（识别、翻译、解答、整理四大类）
-- [√] 现代化UI界面（主题切换、侧边栏折叠）
-- [√] 历史记录管理
-- [√] 异步任务处理
+- [√] 多模型支持：Qwen/GLM/Gemini/豆包/通用 OpenAI 兼容/Paddle/自定义 API/Tesseract
+- [√] 智能提示词管理（识别、翻译、解答、整理）
+- [√] 批量图片并发处理（默认 4 并发）
+- [√] 现代化 UI（主题切换、侧边栏折叠/拖拽）
+- [√] 历史记录管理、结果预览/复制/导出
+- [√] 异步任务处理（线程池，contextId 追踪）
 
-
-### 开发中功能 (v1.1)
-
-- [ ] 批量图片/文件处理
+### 规划/在做
 - [ ] 结果导出多格式（Markdown、PDF、Word、Excel）
-- [ ] 本地大模型支持（支持 Windows 中的 Ollama 部署）
 - [ ] 跨平台支持（Win/Linux/Mac）
 - [ ] 移动端应用
 
