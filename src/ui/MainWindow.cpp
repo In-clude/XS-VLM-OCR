@@ -34,6 +34,7 @@
 #include <QTimer>
 #include <QPalette>
 #include <QScrollBar>
+#include <QAbstractScrollArea>
 #include <QFileInfo>
 #include <QMouseEvent>
 #include <QPainter>
@@ -821,8 +822,12 @@ void MainWindow::setupUI()
     m_resultText = new QTextEdit();
     m_resultText->setReadOnly(true);
     m_resultText->setPlaceholderText("");
-    m_resultText->setMinimumHeight(150); // 结果文本区域最小高度为150
-    m_resultText->setMaximumHeight(300); // 结果文本区域最大高度为300
+    m_resultText->setMinimumHeight(180); // 保留基本展示高度
+    m_resultText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_resultText->setLineWrapMode(QTextEdit::WidgetWidth); // 去除滚动条后保持内容换行
+    m_resultText->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_resultText->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_resultText->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
     m_resultText->setStyleSheet(
         "QTextEdit { "
         "  padding: 15px; "
