@@ -196,7 +196,7 @@ cmake --build . --config Release
 
 ## 功能规划
 
-### 已完成功能(2025.12.29)
+### 已完成功能(2025.12.31)
 - [√] 全局快捷键截图（ALT+A）
 - [√] 多模型支持：Qwen/GLM/Gemini/豆包/通用 OpenAI 兼容/Paddle/自定义 API/Tesseract
 - [√] 智能提示词管理（识别、翻译、解答、整理）
@@ -204,11 +204,12 @@ cmake --build . --config Release
 - [√] 现代化 UI（主题切换、侧边栏折叠/拖拽）
 - [√] 历史记录管理、结果预览/复制/导出
 - [√] 异步任务处理（线程池，contextId 追踪）
+- [√] 跨平台支持（Win && Linux）
 
 ### 规划/在做
+- [ ] 支持PDF文件上传
 - [ ] 结果导出多格式（Markdown、PDF、Word、Excel）
-- [ ] 跨平台支持（Win/Linux/Mac）
-- [ ] 移动端应用
+- [ ] 更多平台支持：Mac / Android
 
 
 ## 加入我们🤝
